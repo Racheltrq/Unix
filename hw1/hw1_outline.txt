@@ -1,0 +1,22 @@
+input: life.txt
+output: output.txt
+
+default: life 10 10 life.txt 10
+
+1. Read in the file, arrange data into a 10x10 2D array
+2. Construct 10x10 model from generation 0.
+3. Constraints: Any live cell with fewer than two live neighbours dies.
+				Any live cell with two or three live neighbours lives on to the next generation.
+				Any live cell with more than three live neighbours dies.
+				Any dead cell with exactly three live neighbours becomes a live cell.
+
+
+
+function generate:
+take in the 2D array
+count neighbours
+compute the value in each cell
+return a new 2D array based on the old array
+
+
+
