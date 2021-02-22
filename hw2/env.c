@@ -104,7 +104,7 @@ int main(int argc, char *argv[]){
 		char dst[255] = "/bin/";
 		strcat(dst, arr[0]);
 		execve(dst, arr, environ_new); //execute
-		
+		free(arr);
 	}
 	
 	
