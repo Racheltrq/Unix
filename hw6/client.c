@@ -37,24 +37,26 @@ int main() {
         exit(1);
     }
 
-    fd_set readfds;
-
-	FD_ZERO(&readfds);
-    FD_SET(sockfd, &readfds);
-    FD_SET(0, &readfds); 
+    fd_set myfds;
+    fd_set tmpfds;
+	FD_ZERO(&myfds);
+    FD_SET(sockfd, &myfds);
+    FD_SET(0, &myfds); 
 
     //char buff[MAX_MSG_LEN];
     for (;;) {
-        select(FD_SETSIZE, &readfds, NULL, NULL, NULL);
+    	tmpfds = myfds;
+        select(FD_SETSIZE, &tmpfds, NULL, NULL, NULL);
         for (int fd = 0; fd < FD_SETSIZE; fd++) {
-        	if (FD_ISSET(fd, &readfds)) {
+        	if (FD_ISSET(fd, &tmpfds)) {
         		printf("fd:%d\n", fd);
         		if (fd > 0) { //read from server
+        			printf("reading from server...\n");
 					char buffer[MAX_MSG_LEN + 1];
 					memset(buffer, 0, sizeof(buffer));
 					if (read(fd, buffer, MAX_MSG_LEN) < 0) {
 						perror("Error: Failed to read from server"); // implies server might be dead or terminating us
-						FD_CLR(fd, &readfds);
+						FD_CLR(fd, &myfds);
 						close(fd);
 						exit(1);
 					}
@@ -62,6 +64,7 @@ int main() {
 				}
 
 				else if (fd == 0) { //write to server
+					printf("writing to server...\n");
 					char buffer[MAX_MSG_LEN + 1];
 					memset(buffer, 0, sizeof(buffer));
 					if (fgets(buffer, MAX_MSG_LEN, stdin) == NULL) {
