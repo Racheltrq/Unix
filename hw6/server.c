@@ -7,34 +7,40 @@
 #include <netinet/in.h>  // servaddr, INADDR_ANY, htons
 #include <pthread.h>
 #include <stdlib.h>      // exit
-#include <ctype.h>
+#include <ctype.h>		 //isdigit
 
-#define PORT_NUM 9999
+#define PORT_NUM 9998
 #define	LISTENQ	100
 #define MAX_MSG_LEN 1024
 #define SERVER_NAME "Server"
 
 
-void parse_args(int argc, char** argv, int* port_num, char* server_name);
+void parse_args(int argc, char** argv, int* port_num, char** server_name, int* nameSet);
 int is_num(char* string);
 void read_from_client(int connfd);
 void send_from_server(int connfd);
 void create_chat(int connfd);
 
-int main() {
+int main(int argc, char** argv) {
 	int					listenfd, connfd;
     struct sockaddr_in  servaddr;
-    //int port_num = PORT_NUM;
-    //char* server_name = SERVER_NAME;
+    int port_num = PORT_NUM;
+    char* server_name = SERVER_NAME;
 
-    //parse_args(argc, argv, &port_num, server_name);
+    int nameSet = 0;
+    parse_args(argc, argv, &port_num, &server_name, &nameSet);
+    //printf("server_name:%s port_num:%d\n", server_name, port_num);
+    if (nameSet != 1) {
+    	printf("Please give the server a name.\n");
+    	exit(1);
+    }
     
 
 	listenfd = socket(AF_INET, SOCK_STREAM, 0); //IPv4 TCP
 	memset(&servaddr, 0, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	servaddr.sin_port = htons(PORT_NUM);
+	servaddr.sin_port = htons(port_num);
 
 	bind(listenfd, (struct sockaddr *) &servaddr, sizeof(servaddr));
 
@@ -56,9 +62,9 @@ int main() {
 	        select(FD_SETSIZE, &newfds, NULL, NULL, NULL);
 	        for (int fd = 0; fd < FD_SETSIZE; fd++) {
 	        	if (FD_ISSET(fd, &newfds)) {
-	        		printf("fd:%d\n", fd);
+	        		//printf("fd:%d\n", fd);
 	        		if (fd > 0) { //read from server
-	        			printf("reading from client...\n");
+	        			//printf("reading from client...\n");
 						char buffer[MAX_MSG_LEN + 1];
 						memset(buffer, 0, sizeof(buffer));
 						if (read(fd, buffer, MAX_MSG_LEN) < 0) {
@@ -71,7 +77,7 @@ int main() {
 					}
 
 					else if (fd == 0) { //write to server
-						printf("writing to client...\n");
+						//printf("writing to client...\n");
 						char buffer[MAX_MSG_LEN + 1];
 						memset(buffer, 0, sizeof(buffer));
 						if (fgets(buffer, MAX_MSG_LEN, stdin) == NULL) {
@@ -82,24 +88,19 @@ int main() {
 							puts("Disconnecting...");
 							exit(0);
 						}
-						if (write(connfd, buffer, strlen(buffer)) < 0) {
+						char msg[MAX_MSG_LEN + 8];
+						strcpy(msg, server_name);
+						strcat(msg, ":");
+						strcat(msg, buffer);
+						if (write(connfd, msg, strlen(msg)) < 0) {
 							perror("Error: Failed to write to server"); 
 						}
-						printf("Done writing\n");
+						printf("%s", msg);
 					}
 	        	}
 		    }
 	    }
 
-
-
-
-			//pthread_create(&tid1, NULL, create_chat, &connfd);
-
-			//pthread_create(&tid2, NULL, send_from_server, &connfd);
-
-			//pthread_detach(tid1);
-			//send_from_server(connfd);
 			
 		}
 		close(connfd);
@@ -107,28 +108,33 @@ int main() {
 }
 
 int is_num(char* string) {
-	for (int i = 0; i < sizeof(string); i++)
+	for (int i = 0; i < strlen(string); i++)
 		if (isdigit(string[i]) == 0)
 		return 0;
     return 1;
 }
 
-void parse_args(int argc, char** argv, int* port_num, char* server_name) {
+void parse_args(int argc, char** argv, int* port_num, char** server_name, int* nameSet) {
+	//printf("argc:%d\n", argc);
+	
 	if (argc < 3) {
-		printf("Usage: ./server [-n name] [-p port]");
+		printf("Usage: ./server [-n name] [-p port]\n");
 		exit(1);
 	}
-	if (argc == 3) {
-		if (strcmp(argv[1], "-p") == 0) {
-			if (is_num(argv[2]) == 1) *port_num = atoi(argv[2]);
+	for (int i = 1; i < argc; i++) {
+		if ((!strcmp(argv[i], "-p")) && (i < argc - 1)) {
+			if(is_num(argv[i+1])) *port_num = atoi(argv[i+1]);;
+			//printf("lolnum client_name:%s port_num:%d\n", *client_name, *port_num);
+		}
+		if ((!strcmp(argv[i], "-n") && (i < argc - 1))) {
+			*server_name = argv[i+1];
+			//printf("lolnam client_name:%s port_num:%d\n", *client_name, *port_num);
+			*nameSet = 1;
 		}
 	}
 }
 
-void create_chat(int connfd) {
-
-}
-
+/*
 void read_from_client(int connfd) {
 	char buff[MAX_MSG_LEN];
 	while(1) {
@@ -156,6 +162,7 @@ void send_from_server(int connfd) {
 		printf("%s\n", msg);
 	}
 }
+*/
 
 
 
